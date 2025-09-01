@@ -1,0 +1,7 @@
+{
+  "url": "https://your-app-url.com",
+  "name": "NFT Showcase Mini App",
+  "iconUrl": "https://your-app-url.com/icon.png"
+}
+// IMPORTANT: Replace "https://your-app-url.com" with the actual URL of your deployed application.
+// The icon.png should also be replaced with a real icon file.
