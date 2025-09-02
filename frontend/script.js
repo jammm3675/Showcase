@@ -32,8 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- TON Connect UI Initialization ---
     const tonConnectUI = new TONConnectUI.TonConnectUI({
-        manifestUrl: '/tonconnect-manifest.json',
-        buttonRootId: 'ton-connect-status'
+        manifestUrl: '/tonconnect-manifest.json'
     });
 
     const connectWalletButton = document.getElementById('connect-wallet-button');
@@ -67,10 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- State Management ---
     tonConnectUI.onStatusChange(async wallet => {
+        const connectButton = document.getElementById('connect-wallet-button');
         if (wallet) {
+            connectButton.style.display = 'none';
             await handleWalletConnected(wallet);
             showView(nftGalleryView);
         } else {
+            connectButton.style.display = 'block';
             handleWalletDisconnected();
             showView(welcomeView);
         }
