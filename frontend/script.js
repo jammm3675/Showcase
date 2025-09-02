@@ -33,7 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- TON Connect UI Initialization ---
     const tonConnectUI = new TONConnectUI.TonConnectUI({
         manifestUrl: '/tonconnect-manifest.json',
-        buttonRootId: 'ton-connect-button'
+        buttonRootId: 'ton-connect-status'
+    });
+
+    const connectWalletButton = document.getElementById('connect-wallet-button');
+    connectWalletButton.addEventListener('click', () => {
+        tonConnectUI.openModal();
     });
 
     // --- View Management ---
