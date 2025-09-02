@@ -2,38 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFT Showcase</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>TON NFT Viewer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <!-- Telegram Web App script -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- TON Connect UI script -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <div id="main-view">
-            <h1>NFT Showcase</h1>
-
-            <div id="search-container">
-                <input type="text" id="search-input" placeholder="Search for users by username...">
+    <div id="app">
+        <header class="app-header">
+            <div class="header-content">
+                <h1>TON NFT Viewer</h1>
+                <div id="ton-connect-button"></div>
+            </div>
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="Search by Telegram username...">
                 <button id="search-button">Search</button>
             </div>
-            <div id="search-results"></div>
+        </header>
 
-            <p>Or connect your TON wallet to see your collection.</p>
-
-            <!-- This div is where the TON Connect button will be rendered -->
-            <div id="ton-connect"></div>
-
-            <div id="my-nfts-container"></div>
-        </div>
-
-        <div id="profile-view" style="display: none;">
-            <!-- Profile content will be rendered here -->
-        </div>
+        <main id="main-content">
+            <div id="welcome-view">
+                <h2>Welcome!</h2>
+                <p>Connect your wallet to view your NFTs or search for other users.</p>
+            </div>
+            <div id="search-results-view" class="hidden">
+                <button id="back-to-main">← Back</button>
+                <h3>Search Results</h3>
+                <div id="search-results"></div>
+            </div>
+            <div id="nft-gallery-view" class="hidden">
+                <h3>My Collection</h3>
+                <div id="nft-gallery" class="gallery"></div>
+            </div>
+             <div id="profile-view" class="hidden">
+                <button id="back-from-profile">← Back</button>
+                <div id="profile-content"></div>
+            </div>
+        </main>
     </div>
 
+    <!-- NFT Detail Modal -->
+    <div id="nft-detail-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="close-modal-button">&times;</button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
     <script src="script.js"></script>
 </body>
 </html>
