@@ -1,4 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Check if the app is running in Telegram
+    if (!window.Telegram || !window.Telegram.WebApp || !window.Telegram.WebApp.initData) {
+        document.getElementById('app').innerHTML = `
+            <div style="text-align: center; padding: 50px; font-size: 18px;">
+                <h1>Welcome to TON NFT Viewer</h1>
+                <p>This application is a Telegram Mini App. Please open it inside your Telegram client to use it.</p>
+            </div>
+        `;
+        return;
+    }
+
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
