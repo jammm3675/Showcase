@@ -233,8 +233,14 @@ button:hover {
     background-color: #007ab3;
 }
 
-#ton-connect-button .ton-connect-button {
+#ton-connect-status .ton-connect-button {
     background-color: var(--accent-color) !important;
+}
+
+.primary-button {
+    font-size: 18px;
+    padding: 15px 30px;
+    margin-top: 20px;
 }
 
 /* Modal Styles */
