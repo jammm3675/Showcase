@@ -1,6 +1,7 @@
 import requests
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from pathlib import Path
@@ -193,16 +194,4 @@ def get_nfts(wallet_address: str):
 
 
 # --- Serve Frontend ---
-@app.get("/tonconnect-manifest.json")
-async def serve_manifest():
-    manifest_path = FRONTEND_DIR / "tonconnect-manifest.json"
-    if not manifest_path.is_file():
-        raise HTTPException(status_code=404, detail="Manifest not found")
-    return FileResponse(manifest_path)
-
-@app.get("/")
-async def serve_frontend():
-    index_path = FRONTEND_DIR / "index.html"
-    if not index_path.is_file():
-        raise HTTPException(status_code=404, detail="index.html not found")
-    return FileResponse(index_path)
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")
