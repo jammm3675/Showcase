@@ -194,4 +194,8 @@ def get_nfts(wallet_address: str):
 
 
 # --- Serve Frontend ---
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse(FRONTEND_DIR / "favicon.svg")
+
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")
