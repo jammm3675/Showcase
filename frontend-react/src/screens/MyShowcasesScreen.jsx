@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
+import apiClient from '../api/axios'; // Use the new apiClient
 
 const ScreenContainer = styled.div`
   text-align: left;
@@ -45,7 +45,7 @@ const MyShowcasesScreen = ({ telegramId, onCreateNew, onSelectShowcase }) => {
     const fetchShowcases = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`/api/users/${telegramId}/showcases`);
+        const response = await apiClient.get(`/users/${telegramId}/showcases`);
         setShowcases(response.data || []);
         setError(null);
       } catch (err) {
