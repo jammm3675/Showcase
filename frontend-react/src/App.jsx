@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 import styled from 'styled-components';
-import axios from 'axios';
+import apiClient from './api/axios'; // Use the new apiClient
 
 // Component Imports
 import Header from './components/Header';
@@ -14,14 +14,10 @@ import MyShowcasesScreen from './screens/MyShowcasesScreen';
 import CreateShowcaseScreen from './screens/CreateShowcaseScreen';
 import ShowcaseDetailScreen from './screens/ShowcaseDetailScreen';
 
-// --- Mock User Data ---
-// In a real Telegram Mini App, this would come from window.Telegram.WebApp.initDataUnsafe.user
-// and the wallet address would be retrieved after connecting.
 const mockUser = {
   id: 12345,
   walletAddress: 'EQCD39VS5jcpt_t_j-q_m-S-v_QR1q2s9r5w5vI3E5a-sc1g',
 };
-
 
 const AppContainer = styled.div`
   background-color: #1a1a1a;
@@ -56,7 +52,7 @@ const ShowcasesTab = ({ telegramId }) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      await axios.post('/api/showcases', { telegram_id: telegramId, title, description });
+      await apiClient.post('/showcases', { telegram_id: telegramId, title, description });
       setView('list');
     } catch (error) {
       console.error("Failed to create showcase:", error);
@@ -68,7 +64,7 @@ const ShowcasesTab = ({ telegramId }) => {
 
   const handleExport = async (showcaseId) => {
     try {
-      const response = await axios.post(`/api/showcases/${showcaseId}/export`, {}, { responseType: 'blob' });
+      const response = await apiClient.post(`/showcases/${showcaseId}/export`, {}, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -95,7 +91,7 @@ const ShowcasesTab = ({ telegramId }) => {
 
 function App() {
   const [activeTab, setActiveTab] = useState('collections');
-  const user = mockUser; // Use the mock user data
+  const user = mockUser;
 
   const renderContent = () => {
     if (!user) {

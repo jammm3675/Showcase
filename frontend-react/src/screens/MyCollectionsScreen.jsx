@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
+import apiClient from '../api/axios'; // Use the new apiClient
 import CollectionCard from '../components/CollectionCard';
 
 const ScreenContainer = styled.div`
@@ -38,7 +38,7 @@ const MyCollectionsScreen = ({ walletAddress, onSelectCollection }) => {
     const fetchNfts = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`/api/nfts/${walletAddress}`);
+        const response = await apiClient.get(`/nfts/${walletAddress}`);
         const groupedCollections = groupNftsByCollection(response.data.nfts);
         setCollections(groupedCollections);
         setError(null);
