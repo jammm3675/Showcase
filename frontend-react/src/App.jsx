@@ -16,7 +16,7 @@ import ShowcaseDetailScreen from './screens/ShowcaseDetailScreen';
 
 const mockUser = {
   id: 12345,
-  walletAddress: 'EQCD39VS5jcpt_t_j-q_m-S-v_QR1q2s9r5w5vI3E5a-sc1g',
+  walletAddress: 'EQAFmjUoZUqKFEBGYFEMbv-m61sFStgAfUR8J6hJDwUU09iT',
 };
 
 const AppContainer = styled.div`
