@@ -57,7 +57,7 @@ class ShowcaseNftSchema(BaseModel):
     image: str
     collection_name: str
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ShowcaseSchema(BaseModel):
     id: int
@@ -65,7 +65,7 @@ class ShowcaseSchema(BaseModel):
     description: Optional[str]
     showcase_nfts: List[ShowcaseNftSchema] = []
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class CreateShowcaseRequest(BaseModel):
     telegram_id: int
@@ -110,16 +110,43 @@ def connect_wallet(request: WalletConnectRequest, db: Session = Depends(get_db))
 
 @api_router.get("/nfts/{wallet_address}", response_model=NftResponse)
 def get_nfts(wallet_address: str):
-    # ... (get nfts logic)
-    if wallet_address in nft_cache: return nft_cache[wallet_address]
+    if wallet_address in nft_cache:
+        print(f"Returning cached NFTs for {wallet_address}")
+        return nft_cache[wallet_address]
+
     tonapi_url = f"https://tonapi.io/v2/accounts/{wallet_address}/nfts?limit=100&offset=0&indirect_ownership=false"
     try:
         response = requests.get(tonapi_url)
         response.raise_for_status()
         data = response.json()
-        nfts = [Nft(address=item.get("address",""), name=item.get("metadata",{}).get("name","No Name"), description=item.get("metadata",{}).get("description","No Description"), image=item.get("metadata",{}).get("image","") or (item.get("previews",[])[-1].get("url") if item.get("previews") else ""), collection_name=item.get("collection",{}).get("name","No Collection")) for item in data.get("nft_items",[])]
-        result = {"nfts": nfts}; nft_cache[wallet_address] = result; return result
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+
+        nfts = []
+        for item in data.get("nft_items", []):
+            metadata = item.get("metadata", {})
+            collection = item.get("collection", {})
+
+            image_url = metadata.get("image", "")
+            # Defensively check for previews and that the list is not empty
+            if not image_url and item.get("previews"):
+                previews = item.get("previews")
+                if previews: # Check if the list is not empty
+                    image_url = previews[-1].get("url")
+
+            nfts.append(Nft(
+                address=item.get("address", ""),
+                name=metadata.get("name", "No Name"),
+                description=metadata.get("description", "No Description"),
+                image=image_url or "", # Ensure we don't pass None
+                collection_name=collection.get("name", "No Collection")
+            ))
+
+        result = {"nfts": nfts}
+        nft_cache[wallet_address] = result
+        print(f"Cached new NFTs for {wallet_address}")
+        return result
+    except Exception as e:
+        print(f"ERROR in get_nfts for wallet {wallet_address}: {e}")
+        raise HTTPException(status_code=500, detail=f"An internal error occurred while fetching NFT data.")
 
 @api_router.post("/showcases", response_model=ShowcaseSchema)
 def create_showcase(request: CreateShowcaseRequest, db: Session = Depends(get_db)):
