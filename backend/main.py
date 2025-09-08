@@ -6,7 +6,7 @@ import requests
 import uvicorn
 from cachetools import TTLCache
 from decouple import config
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -90,7 +90,7 @@ def validate_init_data(init_data: str) -> bool:
 
 
 # --- API Endpoints ---
-api_router = FastAPI()
+api_router = APIRouter()
 
 @api_router.post("/connect_wallet")
 def connect_wallet(request: WalletConnectRequest, db: Session = Depends(get_db)):
