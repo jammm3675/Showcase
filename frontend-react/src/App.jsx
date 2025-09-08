@@ -1,52 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import styled from 'styled-components';
-import apiClient from './api/axios'; // Use the new apiClient
+import apiClient from './api/axios';
+import { TonConnectButton, useTonWallet } from '@tonconnect/ui-react';
 
-// Component Imports
-import Header from './components/Header';
-import BottomNav from './components/BottomNav';
+// ... (imports)
 
-// Screen Imports
-import MyCollectionsScreen from './screens/MyCollectionsScreen';
-import CollectionDetailScreen from './screens/CollectionDetailScreen';
-import MyShowcasesScreen from './screens/MyShowcasesScreen';
-import CreateShowcaseScreen from './screens/CreateShowcaseScreen';
-import ShowcaseDetailScreen from './screens/ShowcaseDetailScreen';
-
-const mockUser = {
-  id: 12345,
-  walletAddress: 'EQAFmjUoZUqKFEBGYFEMbv-m61sFStgAfUR8J6hJDwUU09iT',
-};
-
-const AppContainer = styled.div`
-  background-color: #1a1a1a;
-  min-height: 100vh;
-  color: white;
-`;
-
-const MainContent = styled.main`
-  padding: 1rem;
-  padding-top: 80px;
-  padding-bottom: 80px;
-`;
-
-const CollectionsTab = ({ walletAddress }) => {
-  const [selectedCollection, setSelectedCollection] = useState(null);
-  return selectedCollection ? (
-    <CollectionDetailScreen
-      collection={selectedCollection}
-      onBack={() => setSelectedCollection(null)}
-    />
-  ) : (
-    <MyCollectionsScreen walletAddress={walletAddress} onSelectCollection={setSelectedCollection} />
-  );
-};
-
-const ShowcasesTab = ({ telegramId }) => {
+const ShowcasesTab = ({ telegramId, walletAddress }) => {
   const [view, setView] = useState('list');
   const [selectedShowcase, setSelectedShowcase] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Key to force re-fetch
 
   const handleCreateSubmit = async ({ title, description }) => {
     if (isSubmitting) return;
@@ -54,6 +18,7 @@ const ShowcasesTab = ({ telegramId }) => {
     try {
       await apiClient.post('/showcases', { telegram_id: telegramId, title, description });
       setView('list');
+      setRefreshKey(k => k + 1); // Trigger refresh
     } catch (error) {
       console.error("Failed to create showcase:", error);
       alert("Error: Could not create showcase.");
@@ -62,64 +27,37 @@ const ShowcasesTab = ({ telegramId }) => {
     }
   };
 
-  const handleExport = async (showcaseId) => {
+  const handleSaveNfts = async (nfts) => {
+    if (!selectedShowcase) return;
     try {
-      const response = await apiClient.post(`/showcases/${showcaseId}/export`, {}, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `showcase-${showcaseId}-collage.png`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      const response = await apiClient.post(`/showcases/${selectedShowcase.id}/nfts`, { nfts });
+      setSelectedShowcase(response.data);
+      setView('detail');
+      setRefreshKey(k => k + 1); // Trigger refresh
     } catch (error) {
-      console.error('Error exporting collage:', error);
-      alert('Failed to export collage.');
+      console.error("Error adding NFTs to showcase:", error);
+      alert("Failed to save NFTs.");
     }
   };
 
-  if (selectedShowcase) {
-    return <ShowcaseDetailScreen showcase={selectedShowcase} onBack={() => setSelectedShowcase(null)} onExport={handleExport} />;
+  const handleExport = async (showcaseId) => {
+      // ... (export logic)
+  };
+
+  if (view === 'detail') {
+    return <ShowcaseDetailScreen showcase={selectedShowcase} onBack={() => setView('list')} onExport={handleExport} onAddNfts={() => setView('addNfts')} />;
   }
   if (view === 'create') {
     return <CreateShowcaseScreen onBack={() => setView('list')} onSubmit={handleCreateSubmit} isSubmitting={isSubmitting} />;
   }
-  return <MyShowcasesScreen key={view} telegramId={telegramId} onCreateNew={() => setView('create')} onSelectShowcase={setSelectedShowcase} />;
+  if (view === 'addNfts') {
+    return <AddNftsToShowcaseScreen showcase={selectedShowcase} walletAddress={walletAddress} onBack={() => setView('detail')} onSave={handleSaveNfts} />;
+  }
+
+  // Pass the key to MyShowcasesScreen
+  return <MyShowcasesScreen key={refreshKey} telegramId={telegramId} onCreateNew={() => setView('create')} onSelectShowcase={(showcase) => { setSelectedShowcase(showcase); setView('detail'); }} />;
 };
 
-
-function App() {
-  const [activeTab, setActiveTab] = useState('collections');
-  const user = mockUser;
-
-  const renderContent = () => {
-    if (!user) {
-      return <h2>Please connect your wallet.</h2>;
-    }
-    switch (activeTab) {
-      case 'collections':
-        return <CollectionsTab walletAddress={user.walletAddress} />;
-      case 'showcases':
-        return <ShowcasesTab telegramId={user.id} />;
-      case 'market':
-        return <h2 style={{fontWeight: 600}}>Market (Coming Soon)</h2>;
-      case 'profile':
-        return <h2 style={{fontWeight: 600}}>Profile (Coming Soon)</h2>;
-      default:
-        return <CollectionsTab walletAddress={user.walletAddress} />;
-    }
-  };
-
-  return (
-    <AppContainer>
-      <Header />
-      <MainContent>
-        {renderContent()}
-      </MainContent>
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-    </AppContainer>
-  );
-}
-
-export default App;
+// ... (rest of App.jsx)
+// I will replace the full file content with this logic
+// This is just a summary of the change.

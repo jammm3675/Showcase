@@ -5,26 +5,34 @@ const ScreenContainer = styled.div`
   text-align: left;
 `;
 
-const BackButton = styled.button`
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1rem;
-  margin-bottom: 1rem;
-  cursor: pointer;
-  padding: 0;
+const ButtonBar = styled.div`
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
 `;
 
-const ExportButton = styled.button`
+const ActionButton = styled.button`
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
   font-weight: 600;
   color: white;
-  background-color: #34c759; /* Green color for export */
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  margin: 1rem 0;
+`;
+
+const BackButton = styled(ActionButton)`
+  background: none;
+  padding: 0;
+  margin-bottom: 1rem;
+`;
+
+const ExportButton = styled(ActionButton)`
+  background-color: #34c759; /* Green */
+`;
+
+const AddButton = styled(ActionButton)`
+  background-color: #007aff; /* Blue */
 `;
 
 const NftGrid = styled.div`
@@ -42,13 +50,16 @@ const NftImage = styled.img`
 `;
 
 
-const ShowcaseDetailScreen = ({ showcase, onBack, onExport }) => {
+const ShowcaseDetailScreen = ({ showcase, onBack, onExport, onAddNfts }) => {
   return (
     <ScreenContainer>
       <BackButton onClick={onBack}>&lt; Back to Showcases</BackButton>
       <h2 style={{fontWeight: 600, marginTop: 0}}>{showcase.Title}</h2>
       <p>{showcase.Description}</p>
-      <ExportButton onClick={() => onExport(showcase.ID)}>Export as Image</ExportButton>
+      <ButtonBar>
+        <AddButton onClick={onAddNfts}>Add/Edit NFTs</AddButton>
+        <ExportButton onClick={() => onExport(showcase.ID)}>Export as Image</ExportButton>
+      </ButtonBar>
       <div>
         <h3 style={{fontWeight: 600}}>Included NFTs</h3>
         {showcase.ShowcaseNfts && showcase.ShowcaseNfts.length > 0 ? (

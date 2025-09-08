@@ -38,22 +38,16 @@ const BottomNav = ({ activeTab, onTabChange }) => {
   return (
     <NavContainer>
       <NavItem
-        className={activeTab === 'market' ? 'active' : ''}
-        onClick={() => onTabChange('market')}
-      >
-        Market
-      </NavItem>
-      <NavItem
-        className={activeTab === 'collections' ? 'active' : ''}
-        onClick={() => onTabChange('collections')}
-      >
-        My collections
-      </NavItem>
-      <NavItem
         className={activeTab === 'showcases' ? 'active' : ''}
         onClick={() => onTabChange('showcases')}
       >
         Showcases
+      </NavItem>
+      <NavItem
+        className={activeTab === 'search' ? 'active' : ''}
+        onClick={() => onTabChange('search')}
+      >
+        Search
       </NavItem>
       <NavItem
         className={activeTab === 'profile' ? 'active' : ''}
