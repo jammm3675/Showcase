@@ -35,7 +35,7 @@ const BalanceContainer = styled.div`
 const Header = () => {
   return (
     <HeaderContainer>
-      <Title>Pixel Market</Title>
+      <Title>Showcase</Title>
       <BalanceContainer>
         <span>💎</span>
         <span>0 +</span>

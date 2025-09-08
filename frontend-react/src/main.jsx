@@ -1,10 +1,16 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { TonConnectUIProvider } from '@tonconnect/ui-react';
 import './index.css'
 import App from './App.jsx'
 
+// The manifest is placed in the public directory, so it will be accessible from the root of the domain.
+const manifestUrl = '/tonconnect-manifest.json';
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <TonConnectUIProvider manifestUrl={manifestUrl}>
+      <App />
+    </TonConnectUIProvider>
   </StrictMode>,
 )
