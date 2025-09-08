@@ -36,7 +36,7 @@
     *   Нажмите **Add Environment Variable**.
     *   **Key:** `DATABASE_URL`, **Value:** Вставьте External Connection URL из Шага 1.
     *   **Key:** `TELEGRAM_BOT_TOKEN`, **Value:** Вставьте ваш токен от BotFather.
-    *   **Key:** `PYTHON_VERSION`, **Value:** `3.11` (или другая подходящая версия Python).
+    *   **Key:** `PYTHON_VERSION`, **Value:** `3.11.9`.
 
 4.  Нажмите **Create Web Service**. Render начнет установку зависимостей (и для фронтенда, и для бэкенда), сборку фронтенда и запуск вашего сервера. Этот процесс может занять несколько минут.
 
