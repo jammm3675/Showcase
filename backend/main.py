@@ -183,13 +183,9 @@ async def export_showcase(showcase_id: int, db: Session = Depends(get_db)):
 app.include_router(api_router, prefix="/api")
 
 # --- Static Files Serving ---
-STATIC_DIR=os.path.join(os.path.dirname(__file__),"static")
-if not os.path.exists(STATIC_DIR):print(f"Warning: Static dir {STATIC_DIR} not found.")
-app.mount("/assets",StaticFiles(directory=os.path.join(STATIC_DIR,"assets")),name="static_assets")
-@app.get("/{full_path:path}",response_class=HTMLResponse)
-async def serve_react_app(full_path:str):
-    p=os.path.join(STATIC_DIR,"index.html")
-    if not os.path.exists(p):return HTMLResponse(content="<h1>Frontend not built</h1>",status_code=404)
-    return HTMLResponse(content=open(p).read(),status_code=200)
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+if not os.path.exists(STATIC_DIR):
+    print(f"Warning: Static dir {STATIC_DIR} not found.")
+app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 
 if __name__=="__main__":uvicorn.run(app,host="0.0.0.0",port=8080)
