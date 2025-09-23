@@ -105,7 +105,7 @@ def validate_init_data(init_data: str) -> bool:
 # --- API Endpoints ---
 api_router = APIRouter()
 
-@api_router.get("/tonconnect-manifest", response_class=FileResponse)
+@app.get("/api/tonconnect-manifest", response_class=FileResponse)
 async def serve_manifest():
     path = os.path.join(os.path.dirname(__file__), "static", "tonconnect-manifest.json")
     if not os.path.exists(path):
