@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import MyCollectionsScreen from './MyCollectionsScreen';
-import CollectionDetailScreen from './CollectionDetailScreen';
+import MyNftsScreen from './MyNftsScreen';
+import NftGroupDetailScreen from './NftGroupDetailScreen';
 
 const ScreenContainer = styled.div`
   text-align: left;
@@ -22,13 +22,13 @@ const ProfileHeader = styled.div`
 `;
 
 const PublicProfileScreen = ({ user, onBack }) => {
-  const [selectedCollection, setSelectedCollection] = useState(null);
+  const [selectedGroup, setSelectedGroup] = useState(null);
 
-  if (selectedCollection) {
+  if (selectedGroup) {
     return (
-      <CollectionDetailScreen
-        collection={selectedCollection}
-        onBack={() => setSelectedCollection(null)}
+      <NftGroupDetailScreen
+        group={selectedGroup}
+        onBack={() => setSelectedGroup(null)}
       />
     );
   }
@@ -40,9 +40,9 @@ const PublicProfileScreen = ({ user, onBack }) => {
         <h2 style={{fontWeight: 600, marginTop: 0}}>{user.first_name || 'User'}'s Profile</h2>
         <p>@{user.username || 'No username'}</p>
       </ProfileHeader>
-      <MyCollectionsScreen
+      <MyNftsScreen
         walletAddress={user.wallet_address}
-        onSelectCollection={setSelectedCollection}
+        onSelectGroup={setSelectedGroup}
       />
     </ScreenContainer>
   );

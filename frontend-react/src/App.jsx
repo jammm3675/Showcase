@@ -9,8 +9,8 @@ import Header from './components/Header';
 import BottomNav from './components/BottomNav';
 
 // Screen Imports
-import MyCollectionsScreen from './screens/MyCollectionsScreen';
-import CollectionDetailScreen from './screens/CollectionDetailScreen';
+import MyNftsScreen from './screens/MyNftsScreen';
+import NftGroupDetailScreen from './screens/NftGroupDetailScreen';
 import MyShowcasesScreen from './screens/MyShowcasesScreen';
 import CreateShowcaseScreen from './screens/CreateShowcaseScreen';
 import ShowcaseDetailScreen from './screens/ShowcaseDetailScreen';
@@ -40,8 +40,8 @@ const ConnectWalletContainer = styled.div`
 `;
 
 const ProfileTab = ({ walletAddress }) => {
-  const [selectedCollection, setSelectedCollection] = useState(null);
-  return selectedCollection ? <CollectionDetailScreen collection={selectedCollection} onBack={() => setSelectedCollection(null)} /> : <MyCollectionsScreen walletAddress={walletAddress} onSelectCollection={setSelectedCollection} />;
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  return selectedGroup ? <NftGroupDetailScreen group={selectedGroup} onBack={() => setSelectedGroup(null)} /> : <MyNftsScreen walletAddress={walletAddress} onSelectGroup={setSelectedGroup} />;
 };
 
 const ShowcasesTab = ({ telegramId, walletAddress }) => {
@@ -68,13 +68,13 @@ const ShowcasesTab = ({ telegramId, walletAddress }) => {
   const handleSaveNfts = async (nfts) => {
     if (!selectedShowcase) return;
     try {
-      const response = await apiClient.post(`/showcases/${selectedShowcase.id}/nfts`, { nfts });
+      const response = await apiClient.put(`/showcases/${selectedShowcase.id}/nfts`, { nfts });
       setSelectedShowcase(response.data);
       setView('detail');
       setRefreshKey(k => k + 1);
     } catch (error) {
-      console.error("Error adding NFTs to showcase:", error);
-      alert("Failed to save NFTs.");
+      console.error("Error updating showcase NFTs:", error);
+      alert("Failed to save changes. Please try again.");
     }
   };
 

@@ -18,13 +18,13 @@ const BackButton = styled.button`
   align-items: center;
 `;
 
-const CollectionHeader = styled.div`
+const GroupHeader = styled.div`
   display: flex;
   align-items: flex-start;
   margin-bottom: 1.5rem;
 `;
 
-const CollectionImage = styled.img`
+const GroupImage = styled.img`
   width: 80px;
   height: 80px;
   border-radius: 16px;
@@ -33,11 +33,11 @@ const CollectionImage = styled.img`
   background-color: #1c1c1e;
 `;
 
-const CollectionInfo = styled.div`
+const GroupInfo = styled.div`
   flex: 1;
 `;
 
-const CollectionTitle = styled.h2`
+const GroupTitle = styled.h2`
   margin: 0 0 0.75rem 0;
 `;
 
@@ -64,26 +64,26 @@ const NftGrid = styled.div`
   gap: 1rem;
 `;
 
-const CollectionDetailScreen = ({ collection, onBack }) => {
+const NftGroupDetailScreen = ({ group, onBack }) => {
   return (
     <ScreenContainer>
       <BackButton onClick={onBack}>&lt; Back</BackButton>
-      <CollectionHeader>
-        <CollectionImage src={collection.nfts[0]?.image} alt={collection.name} />
-        <CollectionInfo>
-          <CollectionTitle>{collection.name}</CollectionTitle>
+      <GroupHeader>
+        <GroupImage src={group.nfts[0]?.image} alt={group.name} />
+        <GroupInfo>
+          <GroupTitle>{group.name}</GroupTitle>
           <StatsGrid>
             <Stat>7.7 💎 <span>Floor price</span></Stat>
             <Stat>58 💎 <span>7d volume</span></Stat>
-            <Stat>{collection.nfts.length} <span>Items</span></Stat>
+            <Stat>{group.nfts.length} <span>Items</span></Stat>
             <Stat>0% <span>7d change</span></Stat>
           </StatsGrid>
-        </CollectionInfo>
-      </CollectionHeader>
+        </GroupInfo>
+      </GroupHeader>
 
       <h3 style={{fontWeight: 600}}>Items</h3>
       <NftGrid>
-        {collection.nfts.map((nft) => (
+        {group.nfts.map((nft) => (
           <NftCard key={nft.address} nft={nft} />
         ))}
       </NftGrid>
@@ -91,4 +91,4 @@ const CollectionDetailScreen = ({ collection, onBack }) => {
   );
 };
 
-export default CollectionDetailScreen;
+export default NftGroupDetailScreen;
