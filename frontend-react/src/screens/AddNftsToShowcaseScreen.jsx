@@ -4,6 +4,7 @@ import apiClient from '../api/axios';
 
 const ScreenContainer = styled.div`
   text-align: left;
+  padding-bottom: 100px; /* Add padding to avoid overlap with footer */
 `;
 
 const NftSelectionGrid = styled.div`
@@ -61,27 +62,45 @@ const SaveButton = styled.button`
   cursor: pointer;
 `;
 
+const BackButton = styled.button`
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  padding: 0;
+`;
+
+
 const AddNftsToShowcaseScreen = ({ showcase, walletAddress, onBack, onSave }) => {
   const [allNfts, setAllNfts] = useState([]);
   const [selectedNfts, setSelectedNfts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch all NFTs for the user
-    apiClient.get(`/nfts/${walletAddress}`)
-      .then(response => {
-        setAllNfts(response.data.nfts);
-        // Pre-select NFTs that are already in the showcase
-        const existingNftAddresses = showcase.showcase_nfts.map(nft => nft.nft_address);
-        setSelectedNfts(response.data.nfts.filter(nft => existingNftAddresses.includes(nft.address)));
-      })
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
+    const fetchAndPrepareNfts = async () => {
+        try {
+            setLoading(true);
+            const response = await apiClient.get(`/nfts/${walletAddress}`);
+            const userNfts = response.data.nfts || [];
+            setAllNfts(userNfts);
+
+            const existingNftAddresses = new Set((showcase.showcase_nfts || []).map(nft => nft.nft_address));
+            setSelectedNfts(userNfts.filter(nft => existingNftAddresses.has(nft.address)));
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchAndPrepareNfts();
   }, [walletAddress, showcase]);
 
   const handleSelectNft = (nft) => {
     setSelectedNfts(prev => {
-      if (prev.find(item => item.address === nft.address)) {
+      const isSelected = prev.some(item => item.address === nft.address);
+      if (isSelected) {
         return prev.filter(item => item.address !== nft.address);
       } else {
         return [...prev, nft];
@@ -93,11 +112,12 @@ const AddNftsToShowcaseScreen = ({ showcase, walletAddress, onBack, onSave }) =>
 
   return (
     <ScreenContainer>
-      <button onClick={onBack}>&lt; Back to Showcase</button>
-      <h2>Add NFTs to "{showcase.Title}"</h2>
+      <BackButton onClick={onBack}>&lt; Back to Showcase</BackButton>
+      <h2 style={{fontWeight: 600}}>Add/Remove NFTs</h2>
+      <p>Select the NFTs you want to include in "{showcase.title}".</p>
       <NftSelectionGrid>
         {allNfts.map(nft => {
-          const isSelected = selectedNfts.find(item => item.address === nft.address);
+          const isSelected = selectedNfts.some(item => item.address === nft.address);
           return (
             <NftItem key={nft.address} isSelected={isSelected} onClick={() => handleSelectNft(nft)}>
               <NftImage src={nft.image} alt={nft.name} />
@@ -108,7 +128,7 @@ const AddNftsToShowcaseScreen = ({ showcase, walletAddress, onBack, onSave }) =>
       </NftSelectionGrid>
       <FixedFooter>
         <SaveButton onClick={() => onSave(selectedNfts)}>
-          Save {selectedNfts.length} NFTs
+          Save Changes
         </SaveButton>
       </FixedFooter>
     </ScreenContainer>

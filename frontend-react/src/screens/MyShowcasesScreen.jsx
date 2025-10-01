@@ -68,9 +68,9 @@ const MyShowcasesScreen = ({ telegramId, onCreateNew, onSelectShowcase }) => {
       <div>
         {showcases.length > 0 ? (
           showcases.map(showcase => (
-            <ShowcaseItem key={showcase.ID} onClick={() => onSelectShowcase(showcase)}>
-              <h3>{showcase.Title}</h3>
-              <p>{showcase.Description}</p>
+            <ShowcaseItem key={showcase.id} onClick={() => onSelectShowcase(showcase)}>
+              <h3>{showcase.title}</h3>
+              <p>{showcase.description}</p>
             </ShowcaseItem>
           ))
         ) : (

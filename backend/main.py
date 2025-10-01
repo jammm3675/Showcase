@@ -75,6 +75,9 @@ class CreateShowcaseRequest(BaseModel):
 class AddNftsRequest(BaseModel):
     nfts: List[Nft]
 
+class RemoveNftsRequest(BaseModel):
+    nft_addresses: List[str]
+
 class UserProfile(BaseModel):
     telegram_id: int
     wallet_address: Optional[str]
@@ -164,14 +167,36 @@ def get_user_showcases(telegram_id: int, db: Session = Depends(get_db)):
     if not user:raise HTTPException(status_code=404,detail="User not found")
     return user.showcases
 
-@api_router.post("/showcases/{showcase_id}/nfts", response_model=ShowcaseSchema)
-def add_nfts_to_showcase(showcase_id: int, request: AddNftsRequest, db: Session = Depends(get_db)):
+@api_router.get("/showcases/{showcase_id}", response_model=ShowcaseSchema)
+def get_showcase(showcase_id: int, db: Session = Depends(get_db)):
     sc=db.query(models.Showcase).filter(models.Showcase.id==showcase_id).first()
     if not sc:raise HTTPException(status_code=404,detail="Showcase not found")
+    return sc
+
+@api_router.put("/showcases/{showcase_id}/nfts", response_model=ShowcaseSchema)
+def update_showcase_nfts(showcase_id: int, request: AddNftsRequest, db: Session = Depends(get_db)):
+    sc = db.query(models.Showcase).filter(models.Showcase.id == showcase_id).first()
+    if not sc:
+        raise HTTPException(status_code=404, detail="Showcase not found")
+
+    # Clear existing NFTs for this showcase
+    db.query(models.ShowcaseNft).filter(models.ShowcaseNft.showcase_id == showcase_id).delete()
+
+    # Add the new set of NFTs
     for nft in request.nfts:
-        if not db.query(models.ShowcaseNft).filter_by(showcase_id=showcase_id,nft_address=nft.address).first():
-            db.add(models.ShowcaseNft(showcase_id=showcase_id,nft_address=nft.address,name=nft.name,description=nft.description,image=nft.image,collection_name=nft.collection_name))
-    db.commit();db.refresh(sc);return sc
+        db_nft = models.ShowcaseNft(
+            showcase_id=showcase_id,
+            nft_address=nft.address,
+            name=nft.name,
+            description=nft.description,
+            image=nft.image,
+            collection_name=nft.collection_name
+        )
+        db.add(db_nft)
+
+    db.commit()
+    db.refresh(sc)
+    return sc
 
 @api_router.post("/showcases/{showcase_id}/export")
 async def export_showcase(showcase_id: int, db: Session = Depends(get_db)):
@@ -187,12 +212,15 @@ async def export_showcase(showcase_id: int, db: Session = Depends(get_db)):
     buf=BytesIO();clg.save(buf,"PNG");buf.seek(0)
     return StreamingResponse(buf,media_type="image/png",headers={'Content-Disposition':'attachment; filename="collage.png"'})
 
-app.include_router(api_router, prefix="/api")
-
 # --- Static Files Serving ---
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 if not os.path.exists(STATIC_DIR):
     print(f"Warning: Static dir {STATIC_DIR} not found.")
+
+# --- API Router ---
+# The API router should be included before the static files mount
+# to ensure the API routes are not overridden.
+app.include_router(api_router, prefix="/api")
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 
 if __name__=="__main__":uvicorn.run(app,host="0.0.0.0",port=8080)

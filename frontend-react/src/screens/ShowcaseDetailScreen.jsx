@@ -54,18 +54,18 @@ const ShowcaseDetailScreen = ({ showcase, onBack, onExport, onAddNfts }) => {
   return (
     <ScreenContainer>
       <BackButton onClick={onBack}>&lt; Back to Showcases</BackButton>
-      <h2 style={{fontWeight: 600, marginTop: 0}}>{showcase.Title}</h2>
-      <p>{showcase.Description}</p>
+      <h2 style={{fontWeight: 600, marginTop: 0}}>{showcase.title}</h2>
+      <p>{showcase.description}</p>
       <ButtonBar>
         <AddButton onClick={onAddNfts}>Add/Edit NFTs</AddButton>
-        <ExportButton onClick={() => onExport(showcase.ID)}>Export as Image</ExportButton>
+        <ExportButton onClick={() => onExport(showcase.id)}>Export as Image</ExportButton>
       </ButtonBar>
       <div>
         <h3 style={{fontWeight: 600}}>Included NFTs</h3>
-        {showcase.ShowcaseNfts && showcase.ShowcaseNfts.length > 0 ? (
+        {showcase.showcase_nfts && showcase.showcase_nfts.length > 0 ? (
            <NftGrid>
-            {showcase.ShowcaseNfts.map(nft => (
-                <NftImage key={nft.ID} src={nft.Image} alt={nft.Name} />
+            {showcase.showcase_nfts.map(nft => (
+                <NftImage key={nft.id} src={nft.image} alt={nft.name} />
             ))}
            </NftGrid>
         ) : (

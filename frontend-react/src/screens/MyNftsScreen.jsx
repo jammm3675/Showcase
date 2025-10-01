@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import apiClient from '../api/axios'; // Use the new apiClient
+import apiClient from '../api/axios';
 import CollectionCard from '../components/CollectionCard';
 
 const ScreenContainer = styled.div`
@@ -23,8 +23,8 @@ const groupNftsByCollection = (nfts) => {
   return Object.values(grouped);
 };
 
-const MyCollectionsScreen = ({ walletAddress, onSelectCollection }) => {
-  const [collections, setCollections] = useState([]);
+const MyNftsScreen = ({ walletAddress, onSelectGroup }) => {
+  const [nftGroups, setNftGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -39,8 +39,8 @@ const MyCollectionsScreen = ({ walletAddress, onSelectCollection }) => {
       try {
         setLoading(true);
         const response = await apiClient.get(`/nfts/${walletAddress}`);
-        const groupedCollections = groupNftsByCollection(response.data.nfts);
-        setCollections(groupedCollections);
+        const groupedNfts = groupNftsByCollection(response.data.nfts);
+        setNftGroups(groupedNfts);
         setError(null);
       } catch (err) {
         setError('Failed to fetch NFTs. Please try again later.');
@@ -53,22 +53,23 @@ const MyCollectionsScreen = ({ walletAddress, onSelectCollection }) => {
     fetchNfts();
   }, [walletAddress]);
 
-  if (loading) return <p>Loading your collections...</p>;
+  if (loading) return <p>Loading your NFTs...</p>;
   if (error) return <p style={{ color: '#ff453a' }}>{error}</p>;
 
   return (
     <ScreenContainer>
-      {collections.length > 0 ? (
-        collections.map((collection) => (
-          <div key={collection.name} onClick={() => onSelectCollection(collection)}>
-            <CollectionCard collection={collection} />
+      <h2 style={{fontSize: '1.5rem', fontWeight: 600, marginBottom: '1rem'}}>My NFTs</h2>
+      {nftGroups.length > 0 ? (
+        nftGroups.map((group) => (
+          <div key={group.name} onClick={() => onSelectGroup(group)}>
+            <CollectionCard collection={group} />
           </div>
         ))
       ) : (
-        <p>No NFT collections found in this wallet.</p>
+        <p>No NFTs found in this wallet.</p>
       )}
     </ScreenContainer>
   );
 };
 
-export default MyCollectionsScreen;
+export default MyNftsScreen;
