@@ -88,7 +88,9 @@
         ```bash
         uvicorn backend.main:app --host 0.0.0.0 --port $PORT
         ```
-4.  Перейдите в раздел **Environment** и добавьте переменные окружения:
+4.  Перейдите в раздел **Environment** и добавьте **все** следующие переменные окружения:
     *   **Key:** `DATABASE_URL`, **Value:** Вставьте **Internal Connection URL** вашей базы данных.
-    *   **Key:** `TELEGRAM_BOT_TOKEN`, **Value:** Вставьте токен вашего Telegram бота.
+    *   **Key:** `BOT_TOKEN`, **Value:** Вставьте токен вашего Telegram бота.
+    *   **Key:** `TONCENTER_API_KEY`, **Value:** Вставьте ваш API-ключ для TONcenter.
+    *   **Примечание:** Переменная `RENDER_EXTERNAL_URL` (необходимая для функции "Keep-Alive") будет добавлена Render автоматически. Вам не нужно ее настраивать.
 5.  Нажмите **Create Web Service**. Render автоматически начнет сборку и развертывание вашего приложения. После завершения ваше приложение будет доступно по предоставленному URL.

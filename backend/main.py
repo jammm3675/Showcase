@@ -5,12 +5,17 @@ from urllib.parse import unquote
 import requests
 import uvicorn
 from cachetools import TTLCache
-from decouple import config
 from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
+import asyncio
+import httpx
+from contextlib import asynccontextmanager
+
+# Official TON SDK
+from tonutils.tonconnect import TonConnect
 
 # Collage imports
 from PIL import Image
@@ -23,15 +28,49 @@ from fastapi.staticfiles import StaticFiles
 from . import models
 from .database import engine, get_db, Base
 
+# --- Keep-Alive Logic for Render ---
+
+async def keep_alive():
+    """
+    A background task to prevent the Render free tier instance from spinning down.
+    Pings the service's health check endpoint every 14 minutes.
+    """
+    await asyncio.sleep(10)  # Initial delay to allow the app to start up fully
+
+    render_url = os.getenv("RENDER_EXTERNAL_URL")
+    if not render_url:
+        print("Keep-alive: RENDER_EXTERNAL_URL not found. Skipping keep-alive task.")
+        return
+
+    healthcheck_url = f"{render_url}/api/healthcheck"
+
+    while True:
+        try:
+            print(f"Keep-alive: Pinging {healthcheck_url}...")
+            async with httpx.AsyncClient() as client:
+                response = await client.get(healthcheck_url, timeout=10)
+            response.raise_for_status()
+            print(f"Keep-alive: Ping successful. Status: {response.status_code}")
+        except Exception as e:
+            print(f"Keep-alive: An unexpected error occurred: {e}")
+
+        await asyncio.sleep(840)  # 14 minutes
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Application startup: Starting keep-alive task.")
+    task = asyncio.create_task(keep_alive())
+    yield
+    print("Application shutdown: Keep-alive task will be cancelled.")
+    task.cancel()
+
 # --- App and DB Setup ---
 Base.metadata.create_all(bind=engine)
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 # --- Globals & Cache ---
-# WARNING: The bot token is hardcoded here for demonstration purposes.
-# In a production environment, this MUST be loaded from a secure environment variable.
-# Consider this token compromised and regenerate it after testing.
-BOT_TOKEN = "8010736258:AAHT0GTfDPlmql2zWsysgnca2gwPXe_lRtU"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+TONCENTER_API_KEY = os.getenv("TONCENTER_API_KEY")
 nft_cache = TTLCache(maxsize=500, ttl=300)
 
 # --- Pydantic Models ---
@@ -92,65 +131,14 @@ class UserProfile(BaseModel):
 class UserSearchResult(UserProfile):
     nft_count: int
 
-# --- Security ---
-def validate_init_data(init_data: str, bot_token: str) -> bool:
-    """
-    Validates the initData string received from the Telegram Web App.
-    This function implements the validation logic as described in the official
-    Telegram documentation to ensure that the data is authentic and has not
-    been tampered with.
-
-    Args:
-        init_data: The raw initData string from the frontend.
-        bot_token: The Telegram bot token.
-
-    Returns:
-        True if the data is valid, False otherwise.
-    """
-    if not bot_token:
-        print("CRITICAL-WARNING: TELEGRAM_BOT_TOKEN is not set. Validation failed.")
-        return False
-
-    try:
-        # 1. Parse the initData string into a dictionary of parameters.
-        parsed_data = {
-            k: unquote(v)
-            for k, v in (pair.split('=', 1) for pair in init_data.split('&'))
-        }
-
-        # 2. Extract the 'hash' parameter. This is the signature we need to verify.
-        received_hash = parsed_data.pop('hash', None)
-        if not received_hash:
-            return False
-
-        # 3. Create the data-check-string.
-        # The keys must be sorted alphabetically.
-        # The pairs are formatted as 'key=value' and joined by a newline character.
-        data_check_string = "\n".join(
-            f"{k}={v}" for k, v in sorted(parsed_data.items())
-        )
-
-        # 4. Calculate the secret key.
-        # It's the HMAC-SHA256 hash of the string "WebAppData" using the bot token as the key.
-        secret_key = hmac.new(
-            "WebAppData".encode(), bot_token.encode(), hashlib.sha256
-        ).digest()
-
-        # 5. Calculate the signature.
-        # It's the HMAC-SHA256 hash of the data-check-string, using the secret key.
-        calculated_hash = hmac.new(
-            secret_key, data_check_string.encode(), hashlib.sha256
-        ).hexdigest()
-
-        # 6. Compare the calculated hash with the one received from Telegram.
-        return calculated_hash == received_hash
-
-    except Exception as e:
-        print(f"Error during initData validation: {e}")
-        return False
 
 # --- API Endpoints ---
 api_router = APIRouter()
+
+@api_router.get("/healthcheck")
+def health_check():
+    """A simple endpoint for the keep-alive task to ping."""
+    return {"status": "ok"}
 
 @api_router.get("/tonconnect-manifest", response_model=dict)
 def serve_manifest_json():
@@ -162,9 +150,12 @@ def serve_manifest_json():
 
 @api_router.post("/connect_wallet")
 def connect_wallet(request: WalletConnectRequest, db: Session = Depends(get_db)):
-    if not validate_init_data(request.init_data, BOT_TOKEN):
+    is_valid = TonConnect.verify_telegram_authorization(
+        token=BOT_TOKEN,
+        init_data=request.init_data
+    )
+    if not is_valid:
         raise HTTPException(status_code=403, detail="Invalid initData")
-
     user=db.query(models.User).filter(models.User.telegram_id==request.telegram_id).first()
     if user:
         user.wallet_address=request.wallet_address
@@ -184,10 +175,11 @@ def connect_wallet(request: WalletConnectRequest, db: Session = Depends(get_db))
 @api_router.get("/nfts/{wallet_address}", response_model=NftResponse)
 def get_nfts(wallet_address: str):
     if wallet_address in nft_cache: return nft_cache[wallet_address]
-    url=f"https://tonapi.io/v2/accounts/{wallet_address}/nfts?limit=100&offset=0&indirect_ownership=false"
+    headers = {"Authorization": f"Bearer {TONCENTER_API_KEY}"}
+    url=f"https://toncenter.com/api/v2/getNfts?address={wallet_address}&limit=100&offset=0"
     try:
-        r=requests.get(url);r.raise_for_status();data=r.json()
-        nfts=[];[nfts.append(Nft(address=i.get("address",""),name=m.get("name","?"),description=m.get("description",""),image=m.get("image","")or(p[-1].get("url")if(p:=i.get("previews"))else""),collection_name=c.get("name","?")))for i in data.get("nft_items",[])if(m:=i.get("metadata",{}))and(c:=i.get("collection",{}))]
+        r=requests.get(url, headers=headers);r.raise_for_status();data=r.json()
+        nfts=[];[nfts.append(Nft(address=i.get("address",""),name=m.get("name","?"),description=m.get("description",""),image=m.get("image","")or(p[-1].get("url")if(p:=i.get("previews"))else""),collection_name=c.get("name","?")))for i in data.get("result", {}).get("nft_items",[])if(m:=i.get("metadata",{}))and(c:=i.get("collection",{}))]
         res={"nfts":nfts};nft_cache[wallet_address]=res;return res
     except Exception as e:print(f"ERR get_nfts: {e}");raise HTTPException(status_code=500,detail="Internal error")
 
@@ -233,11 +225,7 @@ def update_showcase_nfts(showcase_id: int, request: AddNftsRequest, db: Session 
     sc = db.query(models.Showcase).filter(models.Showcase.id == showcase_id).first()
     if not sc:
         raise HTTPException(status_code=404, detail="Showcase not found")
-
-    # Clear existing NFTs for this showcase
     db.query(models.ShowcaseNft).filter(models.ShowcaseNft.showcase_id == showcase_id).delete()
-
-    # Add the new set of NFTs
     for nft in request.nfts:
         db_nft = models.ShowcaseNft(
             showcase_id=showcase_id,
@@ -248,7 +236,6 @@ def update_showcase_nfts(showcase_id: int, request: AddNftsRequest, db: Session 
             collection_name=nft.collection_name
         )
         db.add(db_nft)
-
     db.commit()
     db.refresh(sc)
     return sc
@@ -273,8 +260,6 @@ if not os.path.exists(STATIC_DIR):
     print(f"Warning: Static dir {STATIC_DIR} not found.")
 
 # --- API Router ---
-# The API router should be included before the static files mount
-# to ensure the API routes are not overridden.
 app.include_router(api_router, prefix="/api")
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 
