@@ -28,7 +28,10 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 # --- Globals & Cache ---
-BOT_TOKEN = config("TELEGRAM_BOT_TOKEN", default="")
+# WARNING: The bot token is hardcoded here for demonstration purposes.
+# In a production environment, this MUST be loaded from a secure environment variable.
+# Consider this token compromised and regenerate it after testing.
+BOT_TOKEN = "8010736258:AAHT0GTfDPlmql2zWsysgnca2gwPXe_lRtU"
 nft_cache = TTLCache(maxsize=500, ttl=300)
 
 # --- Pydantic Models ---
@@ -90,19 +93,60 @@ class UserSearchResult(UserProfile):
     nft_count: int
 
 # --- Security ---
-def validate_init_data(init_data: str) -> bool:
-    if not BOT_TOKEN:
-        print("Warning: TELEGRAM_BOT_TOKEN is not set. Skipping validation.")
-        return True
+def validate_init_data(init_data: str, bot_token: str) -> bool:
+    """
+    Validates the initData string received from the Telegram Web App.
+    This function implements the validation logic as described in the official
+    Telegram documentation to ensure that the data is authentic and has not
+    been tampered with.
+
+    Args:
+        init_data: The raw initData string from the frontend.
+        bot_token: The Telegram bot token.
+
+    Returns:
+        True if the data is valid, False otherwise.
+    """
+    if not bot_token:
+        print("CRITICAL-WARNING: TELEGRAM_BOT_TOKEN is not set. Validation failed.")
+        return False
+
     try:
-        parsed_data=sorted([pair.split('=',1) for pair in init_data.split('&') if pair.split('=',1)[0]!='hash'])
-        data_check_string="\n".join([f"{k}={unquote(v)}" for k,v in parsed_data])
-        init_data_hash=dict(pair.split('=',1) for pair in init_data.split('&')).get('hash')
-        if not init_data_hash: return False
-        secret_key=hmac.new("WebAppData".encode(),BOT_TOKEN.encode(),hashlib.sha256).digest()
-        h=hmac.new(secret_key,data_check_string.encode(),hashlib.sha256)
-        return h.hexdigest()==init_data_hash
-    except Exception:
+        # 1. Parse the initData string into a dictionary of parameters.
+        parsed_data = {
+            k: unquote(v)
+            for k, v in (pair.split('=', 1) for pair in init_data.split('&'))
+        }
+
+        # 2. Extract the 'hash' parameter. This is the signature we need to verify.
+        received_hash = parsed_data.pop('hash', None)
+        if not received_hash:
+            return False
+
+        # 3. Create the data-check-string.
+        # The keys must be sorted alphabetically.
+        # The pairs are formatted as 'key=value' and joined by a newline character.
+        data_check_string = "\n".join(
+            f"{k}={v}" for k, v in sorted(parsed_data.items())
+        )
+
+        # 4. Calculate the secret key.
+        # It's the HMAC-SHA256 hash of the string "WebAppData" using the bot token as the key.
+        secret_key = hmac.new(
+            "WebAppData".encode(), bot_token.encode(), hashlib.sha256
+        ).digest()
+
+        # 5. Calculate the signature.
+        # It's the HMAC-SHA256 hash of the data-check-string, using the secret key.
+        calculated_hash = hmac.new(
+            secret_key, data_check_string.encode(), hashlib.sha256
+        ).hexdigest()
+
+        # 6. Compare the calculated hash with the one received from Telegram.
+        return calculated_hash == received_hash
+
+    except Exception as e:
+        print(f"Error during initData validation: {e}")
         return False
 
 # --- API Endpoints ---
@@ -118,14 +162,24 @@ def serve_manifest_json():
 
 @api_router.post("/connect_wallet")
 def connect_wallet(request: WalletConnectRequest, db: Session = Depends(get_db)):
-    if not validate_init_data(request.init_data): raise HTTPException(status_code=403, detail="Invalid initData")
+    if not validate_init_data(request.init_data, BOT_TOKEN):
+        raise HTTPException(status_code=403, detail="Invalid initData")
+
     user=db.query(models.User).filter(models.User.telegram_id==request.telegram_id).first()
     if user:
-        user.wallet_address=request.wallet_address;user.username=request.username;user.first_name=request.first_name
+        user.wallet_address=request.wallet_address
+        user.username=request.username
+        user.first_name=request.first_name
     else:
-        user=models.User(telegram_id=request.telegram_id,wallet_address=request.wallet_address,username=request.username,first_name=request.first_name)
+        user=models.User(
+            telegram_id=request.telegram_id,
+            wallet_address=request.wallet_address,
+            username=request.username,
+            first_name=request.first_name
+        )
         db.add(user)
-    db.commit();return {"status":"success"}
+    db.commit()
+    return {"status":"success"}
 
 @api_router.get("/nfts/{wallet_address}", response_model=NftResponse)
 def get_nfts(wallet_address: str):
