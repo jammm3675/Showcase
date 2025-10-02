@@ -108,13 +108,6 @@ def validate_init_data(init_data: str) -> bool:
 # --- API Endpoints ---
 api_router = APIRouter()
 
-@api_router.get("/tonconnect-manifest", response_class=FileResponse)
-async def serve_manifest():
-    path = os.path.join(os.path.dirname(__file__), "static", "tonconnect-manifest.json")
-    if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail="Manifest not found. Please build the frontend.")
-    return FileResponse(path)
-
 @api_router.post("/connect_wallet")
 def connect_wallet(request: WalletConnectRequest, db: Session = Depends(get_db)):
     if not validate_init_data(request.init_data): raise HTTPException(status_code=403, detail="Invalid initData")

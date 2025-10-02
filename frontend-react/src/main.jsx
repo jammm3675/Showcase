@@ -5,7 +5,7 @@ import './index.css'
 import App from './App.jsx'
 
 // The manifest is placed in the public directory, so it will be accessible from the root of the domain.
-const manifestUrl = '/api/tonconnect-manifest';
+const manifestUrl = '/tonconnect-manifest.json';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
