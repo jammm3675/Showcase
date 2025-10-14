@@ -39,6 +39,7 @@ const ConnectWalletContainer = styled.div`
     height: 50vh;
 `;
 
+
 const ProfileTab = ({ walletAddress }) => {
   const [selectedGroup, setSelectedGroup] = useState(null);
   return selectedGroup ? <NftGroupDetailScreen group={selectedGroup} onBack={() => setSelectedGroup(null)} /> : <MyNftsScreen walletAddress={walletAddress} onSelectGroup={setSelectedGroup} />;
@@ -146,7 +147,7 @@ function App() {
 
   return (
     <AppContainer>
-      <Header />
+      <Header walletAddress={wallet?.account?.address} />
       <MainContent>
         {renderContent()}
       </MainContent>
