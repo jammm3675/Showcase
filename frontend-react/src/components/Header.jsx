@@ -32,14 +32,20 @@ const BalanceContainer = styled.div`
   }
 `;
 
-const Header = () => {
+const Header = ({ walletAddress }) => {
+  const formatAddress = (address) => {
+    if (!address) return '';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
   return (
     <HeaderContainer>
       <Title>Showcase</Title>
-      <BalanceContainer>
-        <span>💎</span>
-        <span>0 +</span>
-      </BalanceContainer>
+      {walletAddress && (
+        <BalanceContainer>
+          <span>{formatAddress(walletAddress)}</span>
+        </BalanceContainer>
+      )}
     </HeaderContainer>
   );
 };

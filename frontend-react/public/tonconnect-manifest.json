@@ -1,5 +1,5 @@
 {
-  "url": "https://showcase-t6sf.onrender.com",
+  "url": "http://localhost:5173",
   "name": "Showcase",
-  "iconUrl": "https://showcase-t6sf.onrender.com/vite.svg"
+  "iconUrl": "http://localhost:5173/icon.png"
 }
