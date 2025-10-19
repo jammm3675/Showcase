@@ -25,8 +25,10 @@ import math
 from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import models
+from . import models, wallets
 from .database import engine, get_db, Base
+from .ton_client import TonClient
+from .getgems import GetGemsClient
 
 # --- Keep-Alive Logic for Render ---
 
@@ -73,14 +75,10 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 TONCENTER_API_KEY = os.getenv("TONCENTER_API_KEY")
 nft_cache = TTLCache(maxsize=500, ttl=300)
 
-# --- Pydantic Models ---
-class WalletConnectRequest(BaseModel):
-    telegram_id: int
-    wallet_address: str
-    username: Optional[str] = None
-    first_name: Optional[str] = None
-    init_data: str
+ton_client = TonClient(toncenter_api_key=TONCENTER_API_KEY)
+getgems_client = GetGemsClient(ton_client=ton_client)
 
+# --- Pydantic Models ---
 class Nft(BaseModel):
     address: str
     name: str
@@ -132,6 +130,20 @@ class UserSearchResult(UserProfile):
     nft_count: int
 
 
+class CreateSaleRequest(BaseModel):
+    price: int
+
+
+class CreateSaleResponse(BaseModel):
+    sale_link: str
+
+
+class SaleData(BaseModel):
+    price: int
+    seller: str
+    marketplace: str
+
+
 # --- API Endpoints ---
 api_router = APIRouter()
 
@@ -149,28 +161,12 @@ def serve_manifest_json():
         return json.load(f)
 
 @api_router.post("/connect_wallet")
-def connect_wallet(request: WalletConnectRequest, db: Session = Depends(get_db)):
-    is_valid = TonConnect.verify_telegram_authorization(
-        token=BOT_TOKEN,
-        init_data=request.init_data
+def connect_wallet(request: wallets.WalletConnectRequest, db: Session = Depends(get_db)):
+    return wallets.verify_wallet(
+        request=request,
+        db=db,
+        bot_token=BOT_TOKEN,
     )
-    if not is_valid:
-        raise HTTPException(status_code=403, detail="Invalid initData")
-    user=db.query(models.User).filter(models.User.telegram_id==request.telegram_id).first()
-    if user:
-        user.wallet_address=request.wallet_address
-        user.username=request.username
-        user.first_name=request.first_name
-    else:
-        user=models.User(
-            telegram_id=request.telegram_id,
-            wallet_address=request.wallet_address,
-            username=request.username,
-            first_name=request.first_name
-        )
-        db.add(user)
-    db.commit()
-    return {"status":"success"}
 
 @api_router.get("/nfts/{wallet_address}", response_model=NftResponse)
 def get_nfts(wallet_address: str):
@@ -182,6 +178,21 @@ def get_nfts(wallet_address: str):
         nfts=[];[nfts.append(Nft(address=i.get("address",""),name=m.get("name","?"),description=m.get("description",""),image=m.get("image","")or(p[-1].get("url")if(p:=i.get("previews"))else""),collection_name=c.get("name","?")))for i in data.get("result", {}).get("nft_items",[])if(m:=i.get("metadata",{}))and(c:=i.get("collection",{}))]
         res={"nfts":nfts};nft_cache[wallet_address]=res;return res
     except Exception as e:print(f"ERR get_nfts: {e}");raise HTTPException(status_code=500,detail="Internal error")
+
+
+@api_router.post("/nfts/{nft_address}/sale", response_model=CreateSaleResponse)
+def create_nft_sale(nft_address: str, request: CreateSaleRequest):
+    sale_link = getgems_client.create_sale_link(nft_address, request.price)
+    return CreateSaleResponse(sale_link=sale_link)
+
+
+@api_router.get("/nfts/{nft_address}/sale_data", response_model=SaleData)
+async def get_nft_sale_data(nft_address: str):
+    sale_data = await getgems_client.get_sale_data(nft_address)
+    if not sale_data:
+        raise HTTPException(status_code=404, detail="Sale data not found")
+    return SaleData(**sale_data)
+
 
 @api_router.get("/profile/{telegram_id}", response_model=UserProfile)
 def get_profile(telegram_id: int, db: Session = Depends(get_db)):
