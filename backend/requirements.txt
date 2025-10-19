@@ -7,4 +7,4 @@ requests
 cachetools
 Pillow
 httpx
-tonutils
+tonutils[pytoniq]
